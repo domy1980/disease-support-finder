@@ -8,7 +8,7 @@
 2. [バックエンドのセットアップ](#バックエンドのセットアップ)
 3. [フロントエンドのセットアップ](#フロントエンドのセットアップ)
 4. [Ollamaのセットアップ](#ollamaのセットアップ)
-5. [LM Studioのセットアップ](#lm-studioのセットアップ)
+5. [MLXのセットアップ](#mlxのセットアップ)
 6. [4ビット量子化モデルの使用](#4ビット量子化モデルの使用)
 7. [アプリケーションの起動](#アプリケーションの起動)
 8. [トラブルシューティング](#トラブルシューティング)
@@ -110,21 +110,57 @@ ollama pull llama4-maverick:8b-q4_0
 
 M4 Maxなどの高性能MacBookでは、これらの量子化モデルを使用することで、複数のモデルを同時に実行したり、他のアプリケーションと並行して使用したりすることが可能になります。
 
-## LM Studioのセットアップ
+## MLXのセットアップ
 
-1. [LM Studio公式サイト](https://lmstudio.ai/)からLM Studioをダウンロードしてインストール
+MLXはApple Silicon（M1/M2/M3/M4チップ）向けに最適化された機械学習フレームワークで、Qwenモデルを高速に実行できます。
 
-2. LM Studioを起動し、「Browse Models」タブからQwen30B-A3Bモデルを検索してダウンロード
-   - 検索フィールドに「Qwen30B-A3B」と入力
-   - 4ビット量子化版（Q4_K_M）を選択するとメモリ使用量を抑えられます
+1. MLXをインストール:
 
-3. ダウンロードしたモデルをローカルモデルリストに追加
+```bash
+pip install mlx mlx-lm
+```
 
-4. 「Local Inference Server」タブを開き、以下の設定を行う:
-   - モデル: Qwen30B-A3B
-   - ホスト: localhost
-   - ポート: 1234
-   - 「Start server」をクリック
+2. Qwenモデルをダウンロード（4ビット量子化版）:
+
+```bash
+# ディレクトリを作成
+mkdir -p ~/mlx-models
+
+# Qwen 4B（バランスの取れたモデル）
+git clone https://huggingface.co/mlx-community/Qwen1.5-4B-Chat-4bit ~/mlx-models/Qwen/Qwen1.5-4B-Chat-4bit
+
+# Qwen 7B（高性能モデル）
+git clone https://huggingface.co/mlx-community/Qwen1.5-7B-Chat-4bit ~/mlx-models/Qwen/Qwen1.5-7B-Chat-4bit
+
+# Qwen 1.8B（軽量モデル）
+git clone https://huggingface.co/mlx-community/Qwen1.5-1.8B-Chat-4bit ~/mlx-models/Qwen/Qwen1.5-1.8B-Chat-4bit
+
+# Llama 3 8B（高性能モデル）
+git clone https://huggingface.co/mlx-community/Llama-3-8B-Instruct-4bit ~/mlx-models/mlx-community/Llama-3-8B-Instruct-4bit
+```
+
+3. MLX APIサーバーを起動（オプション）:
+
+```bash
+# MLX APIサーバーをインストール
+pip install mlx-server
+
+# サーバーを起動（Qwen 4Bモデル）
+mlx-server --model ~/mlx-models/Qwen/Qwen1.5-4B-Chat-4bit --port 8080
+```
+
+4. または、直接Pythonから実行することも可能:
+
+```bash
+# モデルを直接実行（APIサーバーなし）
+python -m mlx_lm.generate --model ~/mlx-models/Qwen/Qwen1.5-4B-Chat-4bit --prompt "こんにちは、元気ですか？"
+```
+
+MLXの利点:
+- Apple Silicon向けに最適化された高速な推論
+- 低メモリ使用量（4ビット量子化モデル）
+- バッテリー効率の良い実行
+- APIサーバーまたは直接実行の両方をサポート
 
 ## アプリケーションの起動
 
