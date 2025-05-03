@@ -6,7 +6,7 @@ import {
 } from '../services/api_llm_enhanced';
 import LLMProviderSelector from './LLMProviderSelector';
 
-export const EnhancedLLMSearchControls: React.FC = () => {
+export const EnhancedLLMSearchControls = () => {
   const [isRunningSearch, setIsRunningSearch] = useState(false);
   const [searchStatus, setSearchStatus] = useState<{
     daily_search_running: boolean;

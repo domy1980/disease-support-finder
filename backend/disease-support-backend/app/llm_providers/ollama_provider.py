@@ -39,10 +39,24 @@ class OllamaProvider(LLMProviderInterface):
                 result = await response.json()
                 models = []
                 
+                recommended_models = [
+                    {"name": "llama4:7b", "description": "Llama4 7B - バランスの取れた性能と速度"},
+                    {"name": "llama4-scout:8b", "description": "Llama4 Scout - 検索と情報抽出に最適化"},
+                    {"name": "llama4-maverick:8b", "description": "Llama4 Maverick - 高度な推論能力"},
+                    {"name": "mistral:latest", "description": "Mistral - バランスの取れた性能（デフォルト）"},
+                    {"name": "llama3:70b", "description": "Llama3 70B - 最高の精度（M4 Max 128GBで実行可能）"},
+                    {"name": "tinyllama:latest", "description": "TinyLlama - 軽量で高速（精度は低下）"}
+                ]
+                
+                for model in recommended_models:
+                    models.append(model)
+                
                 for model in result.get("models", []):
-                    models.append({
-                        "name": model.get("name"),
-                        "description": f"Ollama: {model.get('name')}",
-                    })
+                    model_name = model.get("name")
+                    if not any(m["name"] == model_name for m in models):
+                        models.append({
+                            "name": model_name,
+                            "description": f"Ollama: {model_name}",
+                        })
                 
                 return models
