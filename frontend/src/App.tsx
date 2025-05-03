@@ -9,6 +9,7 @@ import { WebsiteStatusTracker } from './components/WebsiteStatusTracker';
 import { ManualEntryForm } from './components/ManualEntryForm';
 import { LLMSearchControls } from './components/LLMSearchControls';
 import { LLMInfoPanel } from './components/LLMInfoPanel';
+import { EnhancedLLMSearchControls } from './components/LLMSearchControls_enhanced';
 import { DiseaseWithOrganizations, SearchResponse, OrganizationCollection } from './types';
 import { searchDiseases, fetchDiseaseWithOrganizations, fetchOrganizationCollection } from './services/api';
 
@@ -205,7 +206,7 @@ function App() {
     if (currentView === 'llm') {
       return (
         <div className="space-y-8">
-          <LLMSearchControls />
+          <EnhancedLLMSearchControls />
           <LLMInfoPanel />
         </div>
       );

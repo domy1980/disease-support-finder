@@ -1,0 +1,62 @@
+import aiohttp
+import json
+from typing import Optional, List, Dict, Any
+from app.llm_providers import LLMProviderInterface
+
+class OllamaProvider(LLMProviderInterface):
+    """Ollama LLM provider implementation"""
+    
+    async def get_completion(self, prompt: str, system_prompt: Optional[str] = None, 
+                            temperature: float = 0.7, max_tokens: int = 1000) -> str:
+        """Get completion from Ollama"""
+        async with aiohttp.ClientSession() as session:
+            payload = {
+                "model": self.model_name,
+                "prompt": prompt,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            
+            if system_prompt:
+                payload["system"] = system_prompt
+                
+            async with session.post(f"{self.base_url}/api/generate", json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"Ollama API error: {response.status} - {error_text}")
+                
+                result = await response.json()
+                return result.get("response", "")
+    
+    async def get_available_models(self) -> List[Dict[str, str]]:
+        """Get available models from Ollama"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.base_url}/api/tags") as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"Ollama API error: {response.status} - {error_text}")
+                
+                result = await response.json()
+                models = []
+                
+                recommended_models = [
+                    {"name": "llama4:7b", "description": "Llama4 7B - バランスの取れた性能と速度"},
+                    {"name": "llama4-scout:8b", "description": "Llama4 Scout - 検索と情報抽出に最適化"},
+                    {"name": "llama4-maverick:8b", "description": "Llama4 Maverick - 高度な推論能力"},
+                    {"name": "mistral:latest", "description": "Mistral - バランスの取れた性能（デフォルト）"},
+                    {"name": "llama3:70b", "description": "Llama3 70B - 最高の精度（M4 Max 128GBで実行可能）"},
+                    {"name": "tinyllama:latest", "description": "TinyLlama - 軽量で高速（精度は低下）"}
+                ]
+                
+                for model in recommended_models:
+                    models.append(model)
+                
+                for model in result.get("models", []):
+                    model_name = model.get("name")
+                    if not any(m["name"] == model_name for m in models):
+                        models.append({
+                            "name": model_name,
+                            "description": f"Ollama: {model_name}",
+                        })
+                
+                return models
