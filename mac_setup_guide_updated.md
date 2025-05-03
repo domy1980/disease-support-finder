@@ -78,29 +78,32 @@ ollama serve
 3. 推奨モデルをダウンロード（別のターミナルで実行）:
 
 ```bash
-# Llama4 7B（基本モデル）
-ollama pull llama4:7b
+# Llama 3 8B（基本モデル）
+ollama pull llama3:8b
 
-# Llama4 Scout（検索と情報抽出に最適化）
-ollama pull llama4-scout:8b-q4_0
-
-# Llama4 Maverick（高度な推論能力）
-ollama pull llama4-maverick:8b-q4_0
+# Llama 3 70B（高性能モデル - 4ビット量子化）
+ollama pull llama3:70b-q4_0
 
 # Mistral（バランスの取れた性能）
 ollama pull mistral:latest
+
+# Gemma（Google製の高性能モデル）
+ollama pull gemma:7b
+
+# Phi-3（Microsoftの軽量高性能モデル）
+ollama pull phi3:mini
 ```
 
 ### 4ビット量子化モデルの使用
 
-Llama4 ScoutとLlama4 Maverickは4ビット量子化バージョン（q4_0）を使用することで、メモリ使用量を大幅に削減しながら高い性能を維持できます：
+4ビット量子化モデル（q4_0）を使用することで、メモリ使用量を大幅に削減しながら高い性能を維持できます：
 
 ```bash
-# 4ビット量子化版Llama4 Scout
-ollama pull llama4-scout:8b-q4_0
+# 4ビット量子化版Llama 3 70B
+ollama pull llama3:70b-q4_0
 
-# 4ビット量子化版Llama4 Maverick
-ollama pull llama4-maverick:8b-q4_0
+# 4ビット量子化版Mistral
+ollama pull mistral:instruct-q4_0
 ```
 
 これらの量子化モデルは、通常のモデルと比較して：
