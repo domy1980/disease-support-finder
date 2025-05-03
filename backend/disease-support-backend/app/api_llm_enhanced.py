@@ -7,7 +7,7 @@ from app.models_enhanced import (
     SearchStatsResponse, OrganizationCollectionResponse
 )
 from app.data_loader import DataLoader
-from app.llm_stats_manager import LLMStatsManager
+from app.llm_stats_manager_enhanced import EnhancedLLMStatsManager
 from app.llm_providers import LLMProvider, LLMProviderInterface
 import os
 import logging
@@ -18,7 +18,7 @@ router = APIRouter()
 
 excel_path = os.path.join(os.path.dirname(__file__), "data", "nando.xlsx")
 data_loader = DataLoader(excel_path)
-stats_manager = LLMStatsManager()
+stats_manager = EnhancedLLMStatsManager()
 
 daily_search_running = False
 
@@ -41,7 +41,7 @@ async def run_llm_search_for_disease(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
         
-        llm_stats_manager = LLMStatsManager(
+        llm_stats_manager = EnhancedLLMStatsManager(
             provider=provider_enum,
             model_name=model_name,
             base_url=base_url
@@ -86,7 +86,7 @@ async def run_llm_search_for_all_diseases(
         if max_diseases > 0 and max_diseases < len(diseases):
             diseases = diseases[:max_diseases]
         
-        llm_stats_manager = LLMStatsManager(
+        llm_stats_manager = EnhancedLLMStatsManager(
             provider=provider_enum,
             model_name=model_name,
             base_url=base_url
@@ -105,7 +105,7 @@ async def run_llm_search_for_all_diseases(
         daily_search_running = False
         raise HTTPException(status_code=500, detail=f"Error starting LLM search for all diseases: {str(e)}")
 
-async def run_daily_llm_search(diseases: List[DiseaseInfo], llm_stats_manager: LLMStatsManager):
+async def run_daily_llm_search(diseases: List[DiseaseInfo], llm_stats_manager: EnhancedLLMStatsManager):
     """Run daily LLM-enhanced search for all diseases"""
     global daily_search_running
     
@@ -171,11 +171,11 @@ async def get_available_providers():
                 "default_model": "mistral:latest"
             },
             {
-                "id": LLMProvider.LMSTUDIO.value,
-                "name": "LM Studio",
-                "description": "Qwen30B-A3Bなどの大規模モデルを実行するためのLM Studio",
-                "default_url": "http://localhost:1234/v1",
-                "default_model": "Qwen30B-A3B"
+                "id": LLMProvider.MLX.value,
+                "name": "MLX",
+                "description": "Apple Silicon向けに最適化されたMLXフレームワーク（Qwenモデル対応）",
+                "default_url": "http://localhost:8080",
+                "default_model": "Qwen/Qwen1.5-4B-Chat-4bit"
             }
         ],
         "default": LLMProvider.OLLAMA.value
@@ -196,19 +196,21 @@ async def get_available_models(
         default_models = {
             LLMProvider.OLLAMA: [
                 {"name": "mistral:latest", "description": "バランスの取れた性能と速度（デフォルト）"},
-                {"name": "llama3:70b", "description": "最高の精度（M4 Max 128GBで実行可能）"},
-                {"name": "tinyllama:latest", "description": "軽量で高速（精度は低下）"}
+                {"name": "llama4-scout:8b-q4_0", "description": "Llama4 Scout - 検索と情報抽出に最適化（4ビット量子化）"},
+                {"name": "llama4-maverick:8b-q4_0", "description": "Llama4 Maverick - 高度な推論能力（4ビット量子化）"},
+                {"name": "llama3:70b", "description": "最高の精度（M4 Max 128GBで実行可能）"}
             ],
-            LLMProvider.LMSTUDIO: [
-                {"name": "Qwen30B-A3B", "description": "高精度な多言語モデル（デフォルト）"},
-                {"name": "Llama-3-70B-Instruct", "description": "最高の精度（M4 Max 128GBで実行可能）"},
-                {"name": "Phi-3-mini-4k-instruct", "description": "軽量で高速（精度は低下）"}
+            LLMProvider.MLX: [
+                {"name": "Qwen/Qwen1.5-4B-Chat-4bit", "description": "Qwen 4B - バランスの取れたモデル（4ビット量子化）"},
+                {"name": "Qwen/Qwen1.5-7B-Chat-4bit", "description": "Qwen 7B - 高性能モデル（4ビット量子化）"},
+                {"name": "Qwen/Qwen1.5-1.8B-Chat-4bit", "description": "Qwen 1.8B - 軽量モデル（4ビット量子化）"},
+                {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"}
             ]
         }
         
         default_model_names = {
             LLMProvider.OLLAMA: "mistral:latest",
-            LLMProvider.LMSTUDIO: "Qwen30B-A3B"
+            LLMProvider.MLX: "Qwen/Qwen1.5-4B-Chat-4bit"
         }
         
         try:

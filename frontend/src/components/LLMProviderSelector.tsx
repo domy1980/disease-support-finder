@@ -152,7 +152,12 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({ onProviderCha
             disabled={loading}
           />
           <p className="mt-1 text-xs text-gray-500">
-            {selectedProvider === 'ollama' ? 'Ollamaのデフォルト: http://localhost:11434' : 'LM Studioのデフォルト: http://localhost:1234/v1'}
+            {selectedProvider === 'ollama' 
+              ? 'Ollamaのデフォルト: http://localhost:11434' 
+              : selectedProvider === 'mlx'
+                ? 'MLXのデフォルト: http://localhost:8080'
+                : 'LM Studioのデフォルト: http://localhost:1234/v1'
+            }
           </p>
         </div>
       </div>

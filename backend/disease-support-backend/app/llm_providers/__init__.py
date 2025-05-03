@@ -5,6 +5,7 @@ class LLMProvider(str, Enum):
     """Enum for LLM providers"""
     OLLAMA = "ollama"
     LMSTUDIO = "lmstudio"
+    MLX = "mlx"
 
 class LLMProviderInterface:
     """Base interface for LLM providers"""
@@ -31,5 +32,8 @@ class LLMProviderInterface:
         elif provider == LLMProvider.LMSTUDIO:
             from app.llm_providers.lmstudio_provider import LMStudioProvider
             return LMStudioProvider(base_url, model_name)
+        elif provider == LLMProvider.MLX:
+            from app.llm_providers.mlx_provider import MLXProvider
+            return MLXProvider(base_url, model_name)
         else:
             raise ValueError(f"Unknown provider: {provider}")
