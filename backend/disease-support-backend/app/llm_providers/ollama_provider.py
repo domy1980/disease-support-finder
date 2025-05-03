@@ -40,12 +40,14 @@ class OllamaProvider(LLMProviderInterface):
                 models = []
                 
                 recommended_models = [
-                    {"name": "llama4:7b", "description": "Llama4 7B - バランスの取れた性能と速度"},
-                    {"name": "llama4-scout:8b", "description": "Llama4 Scout - 検索と情報抽出に最適化"},
-                    {"name": "llama4-maverick:8b", "description": "Llama4 Maverick - 高度な推論能力"},
+                    {"name": "unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q2_K_XL", "description": "Unsloth Llama4 Scout 17B - 超高速（Q2量子化）"},
+                    {"name": "unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q4_K_XL", "description": "Unsloth Llama4 Scout 17B - 高精度（Q4量子化）"},
+                    {"name": "llama3:8b", "description": "Llama3 8B - バランスの取れた性能と速度"},
+                    {"name": "llama3:70b-q4_0", "description": "Llama3 70B - 高性能モデル（4ビット量子化）"},
                     {"name": "mistral:latest", "description": "Mistral - バランスの取れた性能（デフォルト）"},
-                    {"name": "llama3:70b", "description": "Llama3 70B - 最高の精度（M4 Max 128GBで実行可能）"},
-                    {"name": "tinyllama:latest", "description": "TinyLlama - 軽量で高速（精度は低下）"}
+                    {"name": "mistral:instruct-q4_0", "description": "Mistral - 4ビット量子化版"},
+                    {"name": "gemma:7b", "description": "Gemma - Google製の高性能モデル"},
+                    {"name": "phi3:mini", "description": "Phi-3 - Microsoftの軽量高性能モデル"}
                 ]
                 
                 for model in recommended_models:
