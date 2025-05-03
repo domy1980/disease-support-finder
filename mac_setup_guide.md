@@ -9,7 +9,16 @@
 - Homebrewがインストールされていること
 - Python 3.10以上がインストールされていること
 
-## 1. Ollamaのインストール
+## 1. LLMプロバイダーの選択
+
+このアプリケーションは、以下の2つのLLMプロバイダーをサポートしています：
+
+1. **Ollama** - 軽量で使いやすいローカルLLMフレームワーク
+2. **LM Studio** - 高性能なモデル（Qwen30B-A3Bなど）をサポートするGUIベースのLLMフレームワーク
+
+どちらか一方、または両方をインストールして使用できます。
+
+## 2. Ollamaのインストール（オプション）
 
 Ollamaは、ローカルLLMを簡単に実行するためのツールです。
 
@@ -21,7 +30,7 @@ brew install ollama
 ollama serve
 ```
 
-## 2. モデルのダウンロード
+### Ollamaモデルのダウンロード
 
 新しいターミナルウィンドウを開き、以下のコマンドを実行してモデルをダウンロードします。
 
@@ -36,15 +45,34 @@ ollama pull llama2:7b
 ollama pull llama3:70b
 ```
 
-## 3. アプリケーションのクローン
+## 3. LM Studioのインストール（オプション）
+
+LM Studioは、高性能なモデル（Qwen30B-A3Bなど）を実行するためのGUIベースのツールです。
+
+1. [LM Studioの公式サイト](https://lmstudio.ai/)からMac用インストーラーをダウンロード
+2. ダウンロードしたDMGファイルを開き、アプリケーションフォルダにドラッグ＆ドロップ
+3. LM Studioを起動
+
+### LM Studioモデルのダウンロード
+
+1. LM Studioを起動
+2. 「Browse Models」タブをクリック
+3. 検索ボックスに「Qwen30B-A3B」と入力
+4. モデルを見つけてダウンロードボタンをクリック
+5. ダウンロードが完了したら、「Local Models」タブでモデルを選択
+6. 「Chat」タブをクリック
+7. 右上の「API」ボタンをクリックしてAPIサーバーを起動
+8. デフォルトのAPIエンドポイントは `http://localhost:1234/v1` です
+
+## 4. アプリケーションのクローン
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/yourusername/disease-support-finder.git
+git clone https://github.com/domy1980/disease-support-finder.git
 cd disease-support-finder
 ```
 
-## 4. バックエンドのセットアップ
+## 5. バックエンドのセットアップ
 
 ```bash
 # バックエンドディレクトリに移動
@@ -61,14 +89,14 @@ pip install -r requirements.txt
 pip install aiohttp beautifulsoup4
 ```
 
-## 5. LLM拡張バックエンドの起動
+## 6. LLM拡張バックエンドの起動
 
 ```bash
-# LLM拡張バックエンドを起動
-uvicorn app.main_llm:app --reload --host 0.0.0.0 --port 8000
+# マルチプロバイダー対応LLM拡張バックエンドを起動
+uvicorn app.main_llm_enhanced:app --reload --host 0.0.0.0 --port 8001
 ```
 
-## 6. フロントエンドのセットアップ
+## 7. フロントエンドのセットアップ
 
 新しいターミナルウィンドウを開き、以下のコマンドを実行します。
 
@@ -83,13 +111,16 @@ npm install
 npm run dev
 ```
 
-## 7. LLM拡張機能の使用方法
+## 8. LLM拡張機能の使用方法
 
 1. ブラウザで `http://localhost:5173` にアクセス
 2. 「LLM検索」タブに移動
-3. 「LLM拡張検索を実行」ボタンをクリックして、LLM拡張検索を開始
+3. LLMプロバイダーとモデルを選択
+   - Ollama: mistral:latest（デフォルト）
+   - LM Studio: Qwen30B-A3B（推奨）
+4. 「LLM拡張検索を実行」ボタンをクリックして、LLM拡張検索を開始
 
-## 8. カテゴリーフィルタリング
+## 9. カテゴリーフィルタリング
 
 システムは以下のカテゴリー名を検索対象から除外します：
 
@@ -117,23 +148,19 @@ npm run dev
 - 難病
 - 指定難病
 
-## 9. 高度な設定
+## 10. 高度な設定
 
 ### 異なるモデルの使用
 
-より高性能なモデルを使用するには、APIリクエストで `ollama_model` パラメータを指定します。
-
-```
-POST /api/llm/search/run-all?ollama_model=llama3:70b
-```
+フロントエンドのLLMプロバイダー設定から、使用するプロバイダーとモデルを選択できます。
 
 ### キャッシュディレクトリの変更
 
-ウェブコンテンツのキャッシュディレクトリを変更するには、`app/llm_web_scraper.py`ファイルの`cache_dir`パラメータを編集します。
+ウェブコンテンツのキャッシュディレクトリを変更するには、`app/llm_web_scraper_enhanced.py`ファイルの`cache_dir`パラメータを編集します。
 
 ### 並列処理の調整
 
-M4 Maxの高性能を活かすために、`app/llm_stats_manager.py`ファイルの`daily_search_task`メソッドの`max_concurrent`パラメータを調整できます。デフォルトは3ですが、5〜8に増やすことで処理速度が向上します。
+M4 Maxの高性能を活かすために、`app/llm_stats_manager_enhanced.py`ファイルの`daily_search_task`メソッドの`max_concurrent`パラメータを調整できます。デフォルトは3ですが、5〜8に増やすことで処理速度が向上します。
 
 ## トラブルシューティング
 
@@ -148,25 +175,47 @@ killall ollama
 ollama serve
 ```
 
+### LM Studioが起動しない場合
+
+1. LM Studioアプリケーションを再起動
+2. APIサーバーが起動していることを確認（右上の「API」ボタンが緑色になっている）
+3. デフォルトのAPIエンドポイント `http://localhost:1234/v1` が正しく設定されていることを確認
+
 ### メモリ使用量が高い場合
 
 より小さいモデルを使用するか、`max_concurrent`パラメータを小さくしてください。
 
 ```bash
-# より小さいモデルを使用
+# Ollamaでより小さいモデルを使用
 ollama pull tinyllama:latest
+
+# または、LM Studioで小さいモデルを選択
+# 例: Phi-3-mini-4k-instruct
 ```
 
 ### ウェブスクレイピングがブロックされる場合
 
-`app/llm_web_scraper.py`ファイルの`headers`を編集して、より本物のブラウザのように見せることができます。
+`app/llm_web_scraper_enhanced.py`ファイルの`headers`を編集して、より本物のブラウザのように見せることができます。
 
 ## パフォーマンス最適化
 
 M4 Maxの128GBメモリを最大限に活用するために、以下の設定を検討してください：
 
-1. より大きなモデル（llama3:70b）を使用する
+1. LM StudioでQwen30B-A3Bモデルを使用する（最高の精度）
 2. 並列処理数を増やす（max_concurrent=8）
 3. コンテンツキャッシュを高速なSSDに配置する
 
 これらの設定により、データ収集の精度と速度が大幅に向上します。
+
+## LLMプロバイダーの比較
+
+| 機能 | Ollama | LM Studio |
+|------|--------|-----------|
+| 使いやすさ | ★★★★★ | ★★★★☆ |
+| モデルの多様性 | ★★★☆☆ | ★★★★★ |
+| 精度 | ★★★☆☆ | ★★★★★ |
+| メモリ効率 | ★★★★☆ | ★★★☆☆ |
+| 処理速度 | ★★★★☆ | ★★★☆☆ |
+| セットアップの容易さ | ★★★★★ | ★★★★☆ |
+
+Qwen30B-A3Bモデルは、日本語の理解力が特に高く、患者会や支援団体の分類に優れています。
