@@ -135,6 +135,15 @@ git clone https://huggingface.co/mlx-community/Qwen1.5-7B-Chat-4bit ~/mlx-models
 # Qwen 1.8B（軽量モデル）
 git clone https://huggingface.co/mlx-community/Qwen1.5-1.8B-Chat-4bit ~/mlx-models/Qwen/Qwen1.5-1.8B-Chat-4bit
 
+# Qwen 30B A3B（医療特化モデル - M4 Max 128GB推奨）
+git clone https://huggingface.co/mlx-community/Qwen-30B-A3B-4bit ~/mlx-models/mlx-community/Qwen-30B-A3B-4bit
+
+# Qwen2 7B（最新世代モデル）
+git clone https://huggingface.co/mlx-community/Qwen2-7B-Instruct-4bit ~/mlx-models/Qwen/Qwen2-7B-Instruct-4bit
+
+# Qwen2 72B（最新世代大規模モデル - M4 Max 128GB推奨）
+git clone https://huggingface.co/mlx-community/Qwen2-72B-Instruct-4bit ~/mlx-models/Qwen/Qwen2-72B-Instruct-4bit
+
 # Llama 3 8B（高性能モデル）
 git clone https://huggingface.co/mlx-community/Llama-3-8B-Instruct-4bit ~/mlx-models/mlx-community/Llama-3-8B-Instruct-4bit
 ```
