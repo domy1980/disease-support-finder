@@ -173,12 +173,19 @@ async def get_available_providers():
             {
                 "id": LLMProvider.MLX.value,
                 "name": "MLX",
-                "description": "Apple Silicon向けに最適化されたMLXフレームワーク（Qwenモデル対応）",
+                "description": "Apple Silicon向けに最適化されたMLXフレームワーク",
                 "default_url": "http://localhost:8080",
-                "default_model": "Qwen/Qwen1.5-4B-Chat-4bit"
+                "default_model": "mlx-community/Llama-3-8B-Instruct-4bit"
+            },
+            {
+                "id": LLMProvider.LMSTUDIO.value,
+                "name": "LM Studio",
+                "description": "日本語に強いQwen30B-A3BとQwen32Bモデルを実行するためのLM Studio",
+                "default_url": "http://localhost:1234/v1",
+                "default_model": "Qwen30B-A3B"
             }
         ],
-        "default": LLMProvider.OLLAMA.value
+        "default": LLMProvider.LMSTUDIO.value
     }
 
 @router.get("/models")
@@ -198,21 +205,26 @@ async def get_available_models(
                 {"name": "mistral:latest", "description": "バランスの取れた性能と速度（デフォルト）"},
                 {"name": "mistral:instruct-q4_0", "description": "Mistral - 4ビット量子化版"},
                 {"name": "llama3:8b", "description": "Llama3 8B - バランスの取れた性能と速度"},
-                {"name": "llama3:70b-q4_0", "description": "Llama3 70B - 高性能モデル（4ビット量子化）"},
+                {"name": "llama3:70b", "description": "Llama3 70B - 高性能モデル"},
                 {"name": "gemma:7b", "description": "Gemma - Google製の高性能モデル"},
                 {"name": "phi3:mini", "description": "Phi-3 - Microsoftの軽量高性能モデル"}
             ],
             LLMProvider.MLX: [
-                {"name": "Qwen/Qwen1.5-4B-Chat-4bit", "description": "Qwen 4B - バランスの取れたモデル（4ビット量子化）"},
+                {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"},
                 {"name": "Qwen/Qwen1.5-7B-Chat-4bit", "description": "Qwen 7B - 高性能モデル（4ビット量子化）"},
-                {"name": "Qwen/Qwen1.5-1.8B-Chat-4bit", "description": "Qwen 1.8B - 軽量モデル（4ビット量子化）"},
-                {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"}
+                {"name": "Qwen/Qwen1.5-1.8B-Chat-4bit", "description": "Qwen 1.8B - 軽量モデル（4ビット量子化）"}
+            ],
+            LLMProvider.LMSTUDIO: [
+                {"name": "Qwen30B-A3B", "description": "Qwen 30B - 日本語に強い高性能モデル（デフォルト）"},
+                {"name": "Qwen32B", "description": "Qwen 32B - 日本語に強い大規模モデル"},
+                {"name": "Llama-3-70B-Instruct", "description": "Llama 3 70B - 高性能モデル（M4 Max 128GBで実行可能）"}
             ]
         }
         
         default_model_names = {
             LLMProvider.OLLAMA: "mistral:latest",
-            LLMProvider.MLX: "Qwen/Qwen1.5-4B-Chat-4bit"
+            LLMProvider.MLX: "mlx-community/Llama-3-8B-Instruct-4bit",
+            LLMProvider.LMSTUDIO: "Qwen30B-A3B"
         }
         
         try:
