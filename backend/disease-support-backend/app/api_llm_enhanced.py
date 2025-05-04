@@ -196,9 +196,11 @@ async def get_available_models(
         default_models = {
             LLMProvider.OLLAMA: [
                 {"name": "mistral:latest", "description": "バランスの取れた性能と速度（デフォルト）"},
-                {"name": "llama4-scout:8b-q4_0", "description": "Llama4 Scout - 検索と情報抽出に最適化（4ビット量子化）"},
-                {"name": "llama4-maverick:8b-q4_0", "description": "Llama4 Maverick - 高度な推論能力（4ビット量子化）"},
-                {"name": "llama3:70b", "description": "最高の精度（M4 Max 128GBで実行可能）"}
+                {"name": "mistral:instruct-q4_0", "description": "Mistral - 4ビット量子化版"},
+                {"name": "llama3:8b", "description": "Llama3 8B - バランスの取れた性能と速度"},
+                {"name": "llama3:70b-q4_0", "description": "Llama3 70B - 高性能モデル（4ビット量子化）"},
+                {"name": "gemma:7b", "description": "Gemma - Google製の高性能モデル"},
+                {"name": "phi3:mini", "description": "Phi-3 - Microsoftの軽量高性能モデル"}
             ],
             LLMProvider.MLX: [
                 {"name": "Qwen/Qwen1.5-4B-Chat-4bit", "description": "Qwen 4B - バランスの取れたモデル（4ビット量子化）"},
