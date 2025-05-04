@@ -9,6 +9,9 @@ class OrganizationType(str, Enum):
     PATIENT = "patient"
     FAMILY = "family"
     SUPPORT = "support"
+    MEDICAL = "medical"
+    RESEARCH = "research"
+    GOVERNMENT = "government"
     OTHER = "other"
 
 class WebsiteAvailabilityRecord(BaseModel):

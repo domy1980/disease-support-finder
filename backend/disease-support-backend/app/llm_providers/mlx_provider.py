@@ -95,7 +95,6 @@ class MLXProvider(LLMProviderInterface):
             {"name": "Qwen/Qwen1.5-14B-Chat-4bit", "description": "Qwen 14B - 最高性能モデル（4ビット量子化）"},
             {"name": "Qwen/Qwen2-7B-Instruct-4bit", "description": "Qwen2 7B - 最新世代モデル（4ビット量子化）"},
             {"name": "Qwen/Qwen2-72B-Instruct-4bit", "description": "Qwen2 72B - 最新世代大規模モデル（4ビット量子化、M4 Max 128GB推奨）"},
-            {"name": "mlx-community/Qwen-30B-A3B-4bit", "description": "Qwen 30B A3B - 高精度医療特化モデル（4ビット量子化、M4 Max 128GB推奨）"},
             {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"},
             {"name": "mlx-community/Llama-3-70B-Instruct-4bit", "description": "Llama 3 70B - 最高性能モデル（4ビット量子化、M4 Max 128GB推奨）"}
         ]
