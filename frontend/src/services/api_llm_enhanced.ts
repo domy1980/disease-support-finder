@@ -86,9 +86,9 @@ export const getAvailableModels = async (
     if (provider === 'lmstudio') {
       return {
         models: [
-          { name: "Qwen30B-A3B", description: "高精度な多言語モデル（デフォルト）" },
-          { name: "Llama-3-70B-Instruct", description: "最高の精度（M4 Max 128GBで実行可能）" },
-          { name: "Phi-3-mini-4k-instruct", description: "軽量で高速（精度は低下）" }
+          { name: "Qwen30B-A3B", description: "Qwen 30B - 日本語に強い高性能モデル（デフォルト）" },
+          { name: "Qwen32B", description: "Qwen 32B - 日本語に強い大規模モデル" },
+          { name: "Llama-3-70B-Instruct", description: "Llama 3 70B - 高性能モデル（M4 Max 128GBで実行可能）" }
         ],
         default: "Qwen30B-A3B",
         error: error instanceof Error ? error.message : String(error)
