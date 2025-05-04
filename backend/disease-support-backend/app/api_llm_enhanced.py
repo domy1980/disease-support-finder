@@ -28,7 +28,8 @@ async def run_llm_search_for_disease(
     background_tasks: BackgroundTasks, 
     provider: str = "ollama",
     model_name: str = "mistral:latest",
-    base_url: str = "http://localhost:11434"
+    base_url: str = "http://localhost:11434",
+    use_metal: bool = False
 ):
     """Run LLM-enhanced search for a disease and update stats"""
     try:
@@ -41,18 +42,36 @@ async def run_llm_search_for_disease(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
         
-        llm_stats_manager = EnhancedLLMStatsManager(
-            provider=provider_enum,
-            model_name=model_name,
-            base_url=base_url
-        )
+        use_metal_auto = False
+        if provider_enum == LLMProvider.MLX:
+            use_metal_auto = True
+        elif provider_enum == LLMProvider.LLAMACPP and ("phi-4" in model_name.lower() or "qwen" in model_name.lower()):
+            use_metal_auto = True
+        elif provider_enum == LLMProvider.LMSTUDIO and ("qwen30b-a3b" in model_name.lower() or "phi-4" in model_name.lower()):
+            use_metal_auto = True
+        
+        if use_metal or use_metal_auto:
+            from app.llm_stats_manager_metal import MetalLLMStatsManager
+            llm_stats_manager = MetalLLMStatsManager(
+                provider=provider_enum,
+                model_name=model_name,
+                base_url=base_url
+            )
+            logging.info(f"Using Metal-optimized stats manager for {disease.name_ja}")
+        else:
+            llm_stats_manager = EnhancedLLMStatsManager(
+                provider=provider_enum,
+                model_name=model_name,
+                base_url=base_url
+            )
         
         background_tasks.add_task(llm_stats_manager.search_and_update, disease)
         
         return {
             "message": f"LLM-enhanced search for {disease.name_ja} started in background",
             "provider": provider,
-            "model": model_name
+            "model": model_name,
+            "metal_optimized": use_metal or use_metal_auto
         }
     except HTTPException:
         raise
@@ -65,7 +84,8 @@ async def run_llm_search_for_all_diseases(
     provider: str = "ollama",
     model_name: str = "mistral:latest",
     base_url: str = "http://localhost:11434",
-    max_diseases: int = 0
+    max_diseases: int = 0,
+    use_metal: bool = False
 ):
     """Run LLM-enhanced search for all diseases and update stats"""
     global daily_search_running
@@ -86,18 +106,36 @@ async def run_llm_search_for_all_diseases(
         if max_diseases > 0 and max_diseases < len(diseases):
             diseases = diseases[:max_diseases]
         
-        llm_stats_manager = EnhancedLLMStatsManager(
-            provider=provider_enum,
-            model_name=model_name,
-            base_url=base_url
-        )
+        use_metal_auto = False
+        if provider_enum == LLMProvider.MLX:
+            use_metal_auto = True
+        elif provider_enum == LLMProvider.LLAMACPP and ("phi-4" in model_name.lower() or "qwen" in model_name.lower()):
+            use_metal_auto = True
+        elif provider_enum == LLMProvider.LMSTUDIO and ("qwen30b-a3b" in model_name.lower() or "phi-4" in model_name.lower()):
+            use_metal_auto = True
+        
+        if use_metal or use_metal_auto:
+            from app.llm_stats_manager_metal import MetalLLMStatsManager
+            llm_stats_manager = MetalLLMStatsManager(
+                provider=provider_enum,
+                model_name=model_name,
+                base_url=base_url
+            )
+            logging.info(f"Using Metal-optimized stats manager for batch search of {len(diseases)} diseases")
+        else:
+            llm_stats_manager = EnhancedLLMStatsManager(
+                provider=provider_enum,
+                model_name=model_name,
+                base_url=base_url
+            )
         
         background_tasks.add_task(run_daily_llm_search, diseases, llm_stats_manager)
         
         return {
             "message": f"LLM-enhanced search for {len(diseases)} diseases started in background",
             "provider": provider,
-            "model": model_name
+            "model": model_name,
+            "metal_optimized": use_metal or use_metal_auto
         }
     except HTTPException:
         raise
@@ -176,6 +214,20 @@ async def get_available_providers():
                 "description": "Apple Silicon向けに最適化されたMLXフレームワーク（Qwenモデル対応）",
                 "default_url": "http://localhost:8080",
                 "default_model": "Qwen/Qwen1.5-4B-Chat-4bit"
+            },
+            {
+                "id": LLMProvider.LLAMACPP.value,
+                "name": "llama.cpp",
+                "description": "高速なC++実装のLLMフレームワーク（Phi-4、Qwen32B対応）",
+                "default_url": "http://localhost:8080",
+                "default_model": "phi-4-reasoning-plus-8bit"
+            },
+            {
+                "id": LLMProvider.LMSTUDIO.value,
+                "name": "LM Studio",
+                "description": "使いやすいGUIベースのLLMフレームワーク",
+                "default_url": "http://localhost:1234/v1",
+                "default_model": "default"
             }
         ],
         "default": LLMProvider.OLLAMA.value
@@ -196,21 +248,35 @@ async def get_available_models(
         default_models = {
             LLMProvider.OLLAMA: [
                 {"name": "mistral:latest", "description": "バランスの取れた性能と速度（デフォルト）"},
-                {"name": "llama4-scout:8b-q4_0", "description": "Llama4 Scout - 検索と情報抽出に最適化（4ビット量子化）"},
-                {"name": "llama4-maverick:8b-q4_0", "description": "Llama4 Maverick - 高度な推論能力（4ビット量子化）"},
-                {"name": "llama3:70b", "description": "最高の精度（M4 Max 128GBで実行可能）"}
+                {"name": "llama3:8b", "description": "Llama3 8B - バランスの取れた性能と速度"},
+                {"name": "llama3:70b-q4_0", "description": "Llama3 70B - 最高の精度（M4 Max 128GBで実行可能）"},
+                {"name": "unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q4_K_XL", "description": "Unsloth Llama4 Scout - 高精度（Q4量子化）"}
             ],
             LLMProvider.MLX: [
                 {"name": "Qwen/Qwen1.5-4B-Chat-4bit", "description": "Qwen 4B - バランスの取れたモデル（4ビット量子化）"},
                 {"name": "Qwen/Qwen1.5-7B-Chat-4bit", "description": "Qwen 7B - 高性能モデル（4ビット量子化）"},
-                {"name": "Qwen/Qwen1.5-1.8B-Chat-4bit", "description": "Qwen 1.8B - 軽量モデル（4ビット量子化）"},
-                {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"}
+                {"name": "mlx-community/Qwen-30B-A3B-4bit", "description": "Qwen 30B A3B - 高精度医療特化モデル（4ビット量子化、M4 Max 128GB推奨）"},
+                {"name": "mlx-community/Llama-3-8B-Instruct-4bit", "description": "Llama 3 8B - 高性能モデル（4ビット量子化）"},
+                {"name": "mlx-community/Llama-3-70B-Instruct-4bit", "description": "Llama 3 70B - 最高性能モデル（4ビット量子化、M4 Max 128GB推奨）"}
+            ],
+            LLMProvider.LLAMACPP: [
+                {"name": "phi-4-reasoning-plus-8bit", "description": "Phi-4 Reasoning Plus - 推論特化（8ビット量子化）"},
+                {"name": "qwen32b", "description": "Qwen 32B - 高精度汎用モデル（M4 Max 128GB推奨）"},
+                {"name": "ud-q4_k_xl", "description": "Unsloth Llama4 Scout 17B - 高精度（Q4量子化）"},
+                {"name": "ud-q2_k_xl", "description": "Unsloth Llama4 Scout 17B - 超高速（Q2量子化）"}
+            ],
+            LLMProvider.LMSTUDIO: [
+                {"name": "default", "description": "LM Studioで選択されているモデル"},
+                {"name": "qwen30b-a3b", "description": "Qwen 30B A3B - 高精度医療特化モデル（LM Studio経由）"},
+                {"name": "phi-4", "description": "Phi-4 - Microsoft製の高性能モデル（LM Studio経由）"}
             ]
         }
         
         default_model_names = {
             LLMProvider.OLLAMA: "mistral:latest",
-            LLMProvider.MLX: "Qwen/Qwen1.5-4B-Chat-4bit"
+            LLMProvider.MLX: "Qwen/Qwen1.5-4B-Chat-4bit",
+            LLMProvider.LLAMACPP: "phi-4-reasoning-plus-8bit",
+            LLMProvider.LMSTUDIO: "default"
         }
         
         try:

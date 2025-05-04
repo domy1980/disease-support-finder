@@ -9,6 +9,7 @@ class OrganizationType(str, Enum):
     PATIENT = "patient"
     FAMILY = "family"
     SUPPORT = "support"
+    MEDICAL = "medical"
     OTHER = "other"
 
 class WebsiteAvailabilityRecord(BaseModel):
@@ -27,6 +28,7 @@ class EnhancedSupportOrganization(SupportOrganization):
     last_checked: Optional[datetime] = None
     is_available: bool = True
     notes: Optional[str] = None
+    additional_info: Optional[str] = None  # JSON string with additional extracted information
     availability_history: List[WebsiteAvailabilityRecord] = []
 
 class ManualEntry(BaseModel):
