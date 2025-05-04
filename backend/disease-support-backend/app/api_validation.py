@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Path
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Path, Depends
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
@@ -10,62 +10,21 @@ from app.models_llm_enhanced import (
     LLMValidatedOrganization, LLMValidationStatus, 
     LLMValidationRequest, LLMOrganizationCollection
 )
-from app.data_loader import DataLoader
+from app.services.verification_service import VerificationService
+from app.services.disease_service import DiseaseService
+from app.llm_providers import LLMProvider
 
 router = APIRouter()
-
-excel_path = os.path.join(os.path.dirname(__file__), "data", "nando.xlsx")
-data_loader = DataLoader(excel_path)
-
-ORG_COLLECTIONS_DIR = os.path.join(os.path.dirname(__file__), "data", "llm_organizations")
-os.makedirs(ORG_COLLECTIONS_DIR, exist_ok=True)
-
-def get_collection_path(disease_id: str) -> str:
-    """Get path to organization collection file for a disease"""
-    return os.path.join(ORG_COLLECTIONS_DIR, f"{disease_id}.json")
-
-def load_organization_collection(disease_id: str) -> LLMOrganizationCollection:
-    """Load organization collection for a disease"""
-    path = get_collection_path(disease_id)
-    
-    if os.path.exists(path):
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return LLMOrganizationCollection(**data)
-        except Exception as e:
-            logging.error(f"Error loading organization collection for {disease_id}: {str(e)}")
-    
-    disease = data_loader.get_disease_by_id(disease_id)
-    if not disease:
-        raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
-    
-    collection = LLMOrganizationCollection(
-        disease_id=disease_id,
-        disease_name=disease.name_ja,
-        organizations=[]
-    )
-    
-    return collection
-
-def save_organization_collection(collection: LLMOrganizationCollection) -> None:
-    """Save organization collection for a disease"""
-    path = get_collection_path(collection.disease_id)
-    
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(collection.dict(), f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        logging.error(f"Error saving organization collection for {collection.disease_id}: {str(e)}")
 
 @router.get("/organizations/{disease_id}")
 async def get_validated_organizations(
     disease_id: str = Path(..., description="Disease ID"),
-    status: Optional[str] = Query(None, description="Filter by validation status")
+    status: Optional[str] = Query(None, description="Filter by validation status"),
+    verification_service: VerificationService = Depends()
 ):
     """Get validated organizations for a disease"""
     try:
-        collection = load_organization_collection(disease_id)
+        collection = verification_service.load_organization_collection(disease_id)
         
         if status:
             try:
@@ -87,77 +46,156 @@ async def get_validated_organizations(
 async def validate_organization(
     validation_request: LLMValidationRequest,
     disease_id: str = Path(..., description="Disease ID"),
-    organization_id: str = Path(..., description="Organization ID")
+    organization_id: str = Path(..., description="Organization ID"),
+    verification_service: VerificationService = Depends()
 ):
     """Validate an organization"""
     try:
-        collection = load_organization_collection(disease_id)
+        updated_org = await verification_service.human_verify_organization(
+            disease_id=disease_id,
+            organization_id=organization_id,
+            approve=validation_request.approve,
+            verification_notes=validation_request.validation_notes
+        )
         
-        org_index = None
-        for i, org in enumerate(collection.organizations):
-            if org.url == organization_id:
-                org_index = i
-                break
-        
-        if org_index is None:
-            raise HTTPException(status_code=404, detail=f"Organization with ID {organization_id} not found")
-        
-        org = collection.organizations[org_index]
-        
-        if validation_request.approve:
-            org.validation_status = LLMValidationStatus.HUMAN_APPROVED
-        else:
-            org.validation_status = LLMValidationStatus.REJECTED
-        
-        org.human_verified = True
-        org.human_verification_date = datetime.now()
-        
-        if validation_request.validation_notes:
-            org.human_verification_notes = validation_request.validation_notes
-        
-        collection.last_updated = datetime.now()
-        
-        save_organization_collection(collection)
-        
-        return org
+        return updated_org
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error validating organization: {str(e)}")
 
 @router.get("/stats")
-async def get_validation_stats():
+async def get_validation_stats(verification_service: VerificationService = Depends()):
     """Get validation statistics"""
     try:
-        disease_ids = []
-        for filename in os.listdir(ORG_COLLECTIONS_DIR):
-            if filename.endswith(".json"):
-                disease_ids.append(filename[:-5])
-        
-        stats = {
-            "total_organizations": 0,
-            "by_status": {
-                "pending": 0,
-                "extracted": 0,
-                "verified": 0,
-                "human_approved": 0,
-                "rejected": 0
-            },
-            "human_verified_count": 0,
-            "disease_count": len(disease_ids)
-        }
-        
-        for disease_id in disease_ids:
-            collection = load_organization_collection(disease_id)
-            
-            stats["total_organizations"] += len(collection.organizations)
-            
-            for org in collection.organizations:
-                stats["by_status"][org.validation_status.value] += 1
-                
-                if org.human_verified:
-                    stats["human_verified_count"] += 1
-        
-        return stats
+        return verification_service.get_validation_stats()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting validation stats: {str(e)}")
+
+@router.post("/verify-content")
+async def verify_content_with_llm(
+    disease_id: str,
+    content: str,
+    provider: str = "ollama",
+    model_name: str = "mistral:latest",
+    base_url: str = "http://localhost:11434",
+    disease_service: DiseaseService = Depends(),
+    verification_service: VerificationService = Depends()
+):
+    """Verify content using LLM primary verification"""
+    try:
+        disease = disease_service.get_disease_by_id(disease_id)
+        if not disease:
+            raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
+        
+        try:
+            provider_enum = LLMProvider(provider)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
+        
+        verification_service = VerificationService(
+            data_loader=disease_service._data_loader,
+            provider=provider_enum,
+            model_name=model_name,
+            base_url=base_url
+        )
+        
+        org_info, token_usage = await verification_service.primary_verification(
+            text=content,
+            disease=disease
+        )
+        
+        return {
+            "organization_info": org_info,
+            "token_usage": token_usage.dict()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error verifying content: {str(e)}")
+
+@router.post("/verify-organization")
+async def verify_organization_with_llm(
+    disease_id: str,
+    organization: Dict[str, Any],
+    provider: str = "ollama",
+    model_name: str = "mistral:latest",
+    base_url: str = "http://localhost:11434",
+    disease_service: DiseaseService = Depends(),
+    verification_service: VerificationService = Depends()
+):
+    """Verify organization using LLM secondary verification"""
+    try:
+        disease = disease_service.get_disease_by_id(disease_id)
+        if not disease:
+            raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
+        
+        try:
+            provider_enum = LLMProvider(provider)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
+        
+        verification_service = VerificationService(
+            data_loader=disease_service._data_loader,
+            provider=provider_enum,
+            model_name=model_name,
+            base_url=base_url
+        )
+        
+        verified_info, token_usage = await verification_service.secondary_verification(
+            organization=organization,
+            disease=disease
+        )
+        
+        return {
+            "verified_info": verified_info,
+            "token_usage": token_usage.dict()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error verifying organization: {str(e)}")
+
+@router.post("/add-organization")
+async def add_organization(
+    disease_id: str,
+    organization: Dict[str, Any],
+    provider: str = "ollama",
+    model_name: str = "mistral:latest",
+    base_url: str = "http://localhost:11434",
+    disease_service: DiseaseService = Depends(),
+    verification_service: VerificationService = Depends()
+):
+    """Add an organization to a disease's collection"""
+    try:
+        disease = disease_service.get_disease_by_id(disease_id)
+        if not disease:
+            raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
+        
+        try:
+            provider_enum = LLMProvider(provider)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
+        
+        verification_service = VerificationService(
+            data_loader=disease_service._data_loader,
+            provider=provider_enum,
+            model_name=model_name,
+            base_url=base_url
+        )
+        
+        token_usage = organization.pop("token_usage", [])
+        
+        added_org = await verification_service.add_organization(
+            disease_id=disease_id,
+            organization=organization,
+            token_usage=token_usage
+        )
+        
+        return added_org
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding organization: {str(e)}")
