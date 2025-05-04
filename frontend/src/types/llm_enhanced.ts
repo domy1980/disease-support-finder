@@ -1,4 +1,4 @@
-import { DiseaseInfo, SupportOrganization, OrganizationStats } from './index';
+import { SupportOrganization, OrganizationStats } from './index';
 
 export enum LLMValidationStatus {
   PENDING = "pending",
