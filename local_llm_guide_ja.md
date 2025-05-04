@@ -113,7 +113,7 @@ python -m mlx_lm.server --model mlx-community/Llama-3-8B-Instruct-4bit --host 0.
 
 1. LM Studioを起動
 2. 「Browse Models」タブを選択
-3. 検索バーで「Qwen30B-A3B」、「Qwen32B」または「Phi-4」を検索
+3. 検索バーで「Qwen30B-A3B」または「Qwen32B」を検索
 4. モデルをダウンロード
 
 ### LM Studioサーバーの起動
@@ -127,7 +127,7 @@ python -m mlx_lm.server --model mlx-community/Llama-3-8B-Instruct-4bit --host 0.
 1. バックエンドサーバーを起動
 2. フロントエンドを起動
 3. LLMプロバイダー設定パネルで「LM Studio」を選択
-4. モデルとして「Qwen30B-A3B」、「Qwen32B」または「Phi-4」を選択
+4. モデルとして「Qwen30B-A3B」または「Qwen32B」を選択
 5. API URLとして「http://localhost:1234/v1」を設定
 
 ## llama.cppの設定と運用
@@ -150,8 +150,8 @@ LLAMA_METAL=1 make
 # モデルディレクトリの作成
 mkdir -p ~/unsloth/models
 
-# Phi-4 Reasoning Plusモデルのダウンロード
-curl -L https://huggingface.co/microsoft/Phi-4-Reasoning-Plus-8bit/resolve/main/phi-4-reasoning-plus-8bit.gguf -o ~/unsloth/models/phi-4-reasoning-plus/phi-4-reasoning-plus-8bit.gguf
+# Qwen30B-A3Bモデルのダウンロード
+curl -L https://huggingface.co/Qwen/Qwen1.5-32B-Chat-GGUF/resolve/main/qwen1.5-32b-chat-q4_k_m.gguf -o ~/unsloth/models/qwen30b-a3b/qwen30b-a3b-q4_k_m.gguf
 
 # Qwen 32Bモデルのダウンロード
 curl -L https://huggingface.co/Qwen/Qwen2-32B-Instruct-GGUF/resolve/main/qwen2-32b-instruct-q4_k_m.gguf -o ~/unsloth/models/qwen32b/qwen2-32b-instruct-q4_k_m.gguf
@@ -160,8 +160,8 @@ curl -L https://huggingface.co/Qwen/Qwen2-32B-Instruct-GGUF/resolve/main/qwen2-3
 ### llama.cppサーバーの起動
 
 ```bash
-# サーバーモードでPhi-4 Reasoning Plusモデルを実行
-llama-server -m ~/unsloth/models/phi-4-reasoning-plus/phi-4-reasoning-plus-8bit.gguf --n-gpu-layers 99 --host 0.0.0.0 --port 8080
+# サーバーモードでQwen30B-A3Bモデルを実行
+llama-server -m ~/unsloth/models/qwen30b-a3b/qwen30b-a3b-q4_k_m.gguf --n-gpu-layers 64 --host 0.0.0.0 --port 8080
 ```
 
 ### アプリケーションでの使用方法
@@ -169,7 +169,7 @@ llama-server -m ~/unsloth/models/phi-4-reasoning-plus/phi-4-reasoning-plus-8bit.
 1. バックエンドサーバーを起動
 2. フロントエンドを起動
 3. LLMプロバイダー設定パネルで「llama.cpp」を選択
-4. モデルとして「phi-4-reasoning-plus-8bit」または「qwen32b」を選択
+4. モデルとして「qwen30b-a3b」または「qwen32b」を選択
 5. API URLとして「http://localhost:8080」を設定
 
 ## Unsloth Llama4の設定と運用
@@ -249,7 +249,6 @@ ollama run hf.co/unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q2_K_XL
 | Mistral | デフォルト | 16GB+ |
 | Llama 3 (70B) | --n-gpu-layers 64 --ctx-size 4096 | 64GB+ |
 | Qwen30B-A3B | --n-gpu-layers 48 --ctx-size 2048 | 32GB+ |
-| Phi-4 | --n-gpu-layers 32 --ctx-size 2048 | 32GB+ |
 | Qwen32B | --n-gpu-layers 64 --ctx-size 4096 | 64GB+ |
 | Llama-4-Scout-17B | Q4_K_XL（バランス）またはQ2_K_XL（高速） | 32GB+ |
 

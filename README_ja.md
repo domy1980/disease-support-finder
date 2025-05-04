@@ -84,9 +84,8 @@ npm run dev
 - **Llama 3 (70B)**: 最高の精度（M4 Max 128GBで実行可能）
 
 ### Metal最適化モデル
-- **Qwen30B-A3B**: 医療ドメイン特化の高性能モデル
-- **Qwen32B**: 大規模言語理解に優れたモデル
-- **Phi-4 reasoning-plus-8bit**: 推論能力に優れたMicrosoftモデル
+- **Qwen30B-A3B**: 医療ドメイン特化の高性能モデル（日本語対応）
+- **Qwen32B**: 大規模言語理解に優れたモデル（日本語対応）
 
 ### Unsloth Llama4モデル
 - **Llama-4-Scout-17B-16E-Instruct-GGUF:Q2_K_XL**: 超高速（Q2量子化）
