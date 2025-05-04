@@ -39,27 +39,31 @@ class LMStudioProvider(LLMProviderInterface):
     
     async def get_available_models(self) -> List[Dict[str, str]]:
         """Get available models from LMStudio"""
+        recommended_models = [
+            {"name": "Qwen30B-A3B", "description": "Qwen 30B A3B - 高精度医療特化モデル（M4 Max 128GB推奨）"},
+            {"name": "Qwen32B", "description": "Qwen 32B - 大規模言語理解に優れたモデル（M4 Max 128GB推奨）"},
+            {"name": "Phi-4-reasoning-plus-8bit", "description": "Phi-4 - 推論能力に優れたMicrosoftモデル（M4 Max 64GB以上推奨）"}
+        ]
+        
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.base_url}/v1/models") as response:
                 if response.status != 200:
-                    return [{
-                        "name": self.model_name,
-                        "description": f"LMStudio: {self.model_name}",
-                    }]
+                    return recommended_models
                 
                 try:
                     result = await response.json()
-                    models = []
+                    models = list(recommended_models)  # Start with recommended models
                     
                     for model in result.get("data", []):
+                        model_id = model.get("id")
+                        if any(m["name"] == model_id for m in recommended_models):
+                            continue
+                        
                         models.append({
-                            "name": model.get("id"),
-                            "description": f"LMStudio: {model.get('id')}",
+                            "name": model_id,
+                            "description": f"LMStudio: {model_id}",
                         })
                     
                     return models
                 except:
-                    return [{
-                        "name": self.model_name,
-                        "description": f"LMStudio: {self.model_name}",
-                    }]
+                    return recommended_models

@@ -51,7 +51,7 @@ npm run dev
 本アプリケーションは以下のローカルLLMプロバイダーをサポートしています：
 
 1. **Ollama**: Mistral、Llama 3などの標準モデル
-2. **MLX**: Apple Silicon向け最適化モデル（Qwen30B-A3B）
+2. **MLX**: Apple Silicon向け最適化モデル
 3. **LM Studio**: 多様なモデルをGUIで管理
 4. **llama.cpp**: Metal GPU加速による高性能モデル実行
 

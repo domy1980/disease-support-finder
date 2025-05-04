@@ -20,7 +20,7 @@
 | プロバイダー | 特徴 | 推奨モデル | 必要メモリ |
 |------------|------|-----------|----------|
 | Ollama | 簡単なセットアップ、多様なモデル | Mistral, Llama 3 | 16GB+ |
-| MLX | Apple Silicon最適化、高速 | Qwen30B-A3B | 32GB+ |
+| MLX | Apple Silicon最適化、高速 | - | 32GB+ |
 | LM Studio | GUIインターフェース、使いやすさ | Qwen32B, Phi-4 | 32GB+ |
 | llama.cpp | Metal GPU加速、高性能 | Phi-4, Qwen32B | 64GB+ |
 | Unsloth | Llama4モデル専用 | Llama-4-Scout-17B | 32GB+ |
@@ -44,7 +44,7 @@ brew install ollama
 ollama pull mistral:latest
 
 # Llama 3モデル（70B、高性能）
-ollama pull llama3:70b-q4_0
+ollama pull llama3:70b
 
 # Unsloth Llama4モデル
 ollama run hf.co/unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q4_K_XL
@@ -81,17 +81,17 @@ pip install mlx mlx-lm
 ### モデルのダウンロード
 
 ```bash
-# Qwen30B-A3Bモデルをダウンロード
+# MLXモデルをダウンロード（例：Llama 3 8B）
 git clone https://github.com/mlx-community/mlx-community-models.git
 cd mlx-community-models
-python -m mlx_lm.download --model mlx-community/Qwen-30B-A3B-4bit
+python -m mlx_lm.download --model mlx-community/Llama-3-8B-Instruct-4bit
 ```
 
 ### MLXサーバーの起動
 
 ```bash
 # モデルを指定してサーバーを起動
-python -m mlx_lm.server --model mlx-community/Qwen-30B-A3B-4bit --host 0.0.0.0 --port 8080
+python -m mlx_lm.server --model mlx-community/Llama-3-8B-Instruct-4bit --host 0.0.0.0 --port 8080
 ```
 
 ### アプリケーションでの使用方法
@@ -99,7 +99,7 @@ python -m mlx_lm.server --model mlx-community/Qwen-30B-A3B-4bit --host 0.0.0.0 -
 1. バックエンドサーバーを起動
 2. フロントエンドを起動
 3. LLMプロバイダー設定パネルで「MLX」を選択
-4. モデルとして「mlx-community/Qwen-30B-A3B-4bit」を選択
+4. モデルとして「mlx-community/Llama-3-8B-Instruct-4bit」を選択
 5. API URLとして「http://localhost:8080」を設定
 
 ## LM Studioの設定と運用
@@ -113,7 +113,7 @@ python -m mlx_lm.server --model mlx-community/Qwen-30B-A3B-4bit --host 0.0.0.0 -
 
 1. LM Studioを起動
 2. 「Browse Models」タブを選択
-3. 検索バーで「Qwen32B」または「Phi-4」を検索
+3. 検索バーで「Qwen30B-A3B」、「Qwen32B」または「Phi-4」を検索
 4. モデルをダウンロード
 
 ### LM Studioサーバーの起動
@@ -127,7 +127,7 @@ python -m mlx_lm.server --model mlx-community/Qwen-30B-A3B-4bit --host 0.0.0.0 -
 1. バックエンドサーバーを起動
 2. フロントエンドを起動
 3. LLMプロバイダー設定パネルで「LM Studio」を選択
-4. モデルとして使用中のモデル名を選択
+4. モデルとして「Qwen30B-A3B」、「Qwen32B」または「Phi-4」を選択
 5. API URLとして「http://localhost:1234/v1」を設定
 
 ## llama.cppの設定と運用
