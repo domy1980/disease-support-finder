@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Typography, Paper, Grid, CircularProgress, Alert, Chip, Card, CardContent, Divider, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Button, Typography, Paper, CircularProgress, Alert, Chip, Card, CardContent, Divider, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { fetchOrganizationCollection, validateOrganization } from '../services/api_validation';
 import { LLMValidatedOrganization, LLMValidationStatus } from '../types/llm_enhanced';
@@ -65,7 +65,7 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
     setError(null);
     
     try {
-      await validateOrganization(diseaseId || '', selectedOrg.id, {
+      await validateOrganization(diseaseId || '', selectedOrg.name, {
         validation_notes: verificationNotes,
         approve
       });
@@ -171,9 +171,9 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
             検証待ちの組織はありません。
           </Typography>
         ) : (
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {pendingOrgs.map((org) => (
-              <Grid item xs={12} key={org.id}>
+              <Box key={org.name} sx={{ width: '100%' }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -186,7 +186,7 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
                     </Box>
                     
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {getTypeLabel(org.organization_type)}
+                      {getTypeLabel(org.type)}
                     </Typography>
                     
                     <Typography variant="body2" gutterBottom>
@@ -220,9 +220,9 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         )}
       </Paper>
       
@@ -236,11 +236,11 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
             検証済みの組織はありません。
           </Typography>
         ) : (
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             {organizations
               .filter(org => !needsVerification(org))
               .map((org) => (
-                <Grid item xs={12} sm={6} md={4} key={org.id}>
+                <Box key={org.name} sx={{ width: { xs: '100%', sm: '48%', md: '31%' } }}>
                   <Card variant="outlined">
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -253,7 +253,7 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
                       </Box>
                       
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {getTypeLabel(org.organization_type)}
+                        {getTypeLabel(org.type)}
                       </Typography>
                       
                       <Typography variant="body2" noWrap>
@@ -261,9 +261,9 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
                       </Typography>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
               ))}
-          </Grid>
+          </Box>
         )}
       </Paper>
       
@@ -280,7 +280,7 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
               </Typography>
               
               <Typography variant="body1" gutterBottom>
-                <strong>タイプ:</strong> {getTypeLabel(selectedOrg.organization_type)}
+                <strong>タイプ:</strong> {getTypeLabel(selectedOrg.type)}
               </Typography>
               
               {selectedOrg.description && (
@@ -309,7 +309,7 @@ const HumanVerificationPanel: React.FC<HumanVerificationPanelProps> = ({
         </DialogContent>
         
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="default">
+          <Button onClick={handleCloseDialog} color="inherit">
             キャンセル
           </Button>
           

@@ -3,9 +3,7 @@ import { SearchStatsResponse } from '../types';
 import { fetchAllStats, runSearchForAllDiseases, getSearchStatus } from '../services/api';
 import { 
   runLLMSearchForAllDiseases, 
-  getLLMSearchStatus, 
-  getAvailableProviders, 
-  getAvailableModels 
+  getLLMSearchStatus
 } from '../services/api_llm_enhanced';
 import LLMProviderSelector from './LLMProviderSelector';
 
