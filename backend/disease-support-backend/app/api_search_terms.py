@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Path
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Path, Depends
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
@@ -7,152 +7,58 @@ import json
 import os
 from app.models import DiseaseInfo
 from app.models_llm_enhanced import SearchTerm, SearchTermRequest, LLMSearchConfig
-from app.data_loader import DataLoader
+from app.services.search_service import SearchService
+from app.services.disease_service import DiseaseService
+from app.llm_providers import LLMProvider
 
 router = APIRouter()
 
-excel_path = os.path.join(os.path.dirname(__file__), "data", "nando.xlsx")
-data_loader = DataLoader(excel_path)
-
-SEARCH_TERMS_DIR = os.path.join(os.path.dirname(__file__), "data", "search_terms")
-os.makedirs(SEARCH_TERMS_DIR, exist_ok=True)
-
-def get_search_terms_path(disease_id: str) -> str:
-    """Get path to search terms file for a disease"""
-    return os.path.join(SEARCH_TERMS_DIR, f"{disease_id}.json")
-
-def load_search_config(disease_id: str) -> LLMSearchConfig:
-    """Load search configuration for a disease"""
-    path = get_search_terms_path(disease_id)
-    
-    if os.path.exists(path):
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return LLMSearchConfig(**data)
-        except Exception as e:
-            logging.error(f"Error loading search config for {disease_id}: {str(e)}")
-    
-    disease = data_loader.get_disease_by_id(disease_id)
-    if not disease:
-        raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
-    
-    search_terms = []
-    
-    search_terms.append(SearchTerm(
-        id=str(uuid.uuid4()),
-        term=disease.name_ja,
-        language="ja",
-        type="patient"
-    ))
-    
-    search_terms.append(SearchTerm(
-        id=str(uuid.uuid4()),
-        term=disease.name_ja,
-        language="ja",
-        type="family"
-    ))
-    
-    search_terms.append(SearchTerm(
-        id=str(uuid.uuid4()),
-        term=disease.name_ja,
-        language="ja",
-        type="support"
-    ))
-    
-    if disease.name_en and disease.name_en.strip():
-        search_terms.append(SearchTerm(
-            id=str(uuid.uuid4()),
-            term=disease.name_en,
-            language="en",
-            type="patient"
-        ))
-        
-        search_terms.append(SearchTerm(
-            id=str(uuid.uuid4()),
-            term=disease.name_en,
-            language="en",
-            type="support"
-        ))
-    
-    config = LLMSearchConfig(
-        disease_id=disease_id,
-        search_terms=search_terms
-    )
-    
-    save_search_config(config)
-    
-    return config
-
-def save_search_config(config: LLMSearchConfig) -> None:
-    """Save search configuration for a disease"""
-    path = get_search_terms_path(config.disease_id)
-    
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(config.dict(), f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        logging.error(f"Error saving search config for {config.disease_id}: {str(e)}")
-
 @router.get("/config/{disease_id}")
-async def get_search_config(disease_id: str = Path(..., description="Disease ID")):
+async def get_search_config(
+    disease_id: str = Path(..., description="Disease ID"),
+    search_service: SearchService = Depends()
+):
     """Get search configuration for a disease"""
     try:
-        config = load_search_config(disease_id)
+        config = search_service.get_search_config(disease_id)
         return config
-    except HTTPException:
-        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting search config: {str(e)}")
 
 @router.post("/config/{disease_id}")
 async def update_search_config(
     config_update: Dict[str, Any],
-    disease_id: str = Path(..., description="Disease ID")
+    disease_id: str = Path(..., description="Disease ID"),
+    search_service: SearchService = Depends()
 ):
     """Update search configuration for a disease"""
     try:
-        config = load_search_config(disease_id)
-        
-        for key, value in config_update.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
-        
-        config.last_updated = datetime.now()
-        
-        save_search_config(config)
-        
-        return config
-    except HTTPException:
-        raise
+        updated_config = search_service.update_search_config(disease_id, config_update)
+        return updated_config
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating search config: {str(e)}")
 
 @router.post("/terms/{disease_id}")
 async def add_search_term(
     term_request: SearchTermRequest,
-    disease_id: str = Path(..., description="Disease ID")
+    disease_id: str = Path(..., description="Disease ID"),
+    search_service: SearchService = Depends()
 ):
     """Add a search term for a disease"""
     try:
-        config = load_search_config(disease_id)
-        
-        new_term = SearchTerm(
-            id=str(uuid.uuid4()),
+        new_term = search_service.add_search_term(
+            disease_id=disease_id,
             term=term_request.term,
             language=term_request.language,
             type=term_request.type
         )
-        
-        config.search_terms.append(new_term)
-        
-        config.last_updated = datetime.now()
-        
-        save_search_config(config)
-        
         return new_term
-    except HTTPException:
-        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding search term: {str(e)}")
 
@@ -160,63 +66,111 @@ async def add_search_term(
 async def update_search_term(
     term_update: Dict[str, Any],
     disease_id: str = Path(..., description="Disease ID"),
-    term_id: str = Path(..., description="Term ID")
+    term_id: str = Path(..., description="Term ID"),
+    search_service: SearchService = Depends()
 ):
     """Update a search term for a disease"""
     try:
-        config = load_search_config(disease_id)
-        
-        term_index = None
-        for i, term in enumerate(config.search_terms):
-            if term.id == term_id:
-                term_index = i
-                break
-        
-        if term_index is None:
-            raise HTTPException(status_code=404, detail=f"Term with ID {term_id} not found")
-        
-        term = config.search_terms[term_index]
-        for key, value in term_update.items():
-            if hasattr(term, key):
-                setattr(term, key, value)
-        
-        term.updated_at = datetime.now()
-        config.last_updated = datetime.now()
-        
-        save_search_config(config)
-        
-        return term
-    except HTTPException:
-        raise
+        updated_term = search_service.update_search_term(
+            disease_id=disease_id,
+            term_id=term_id,
+            term_update=term_update
+        )
+        return updated_term
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating search term: {str(e)}")
 
 @router.delete("/terms/{disease_id}/{term_id}")
 async def delete_search_term(
     disease_id: str = Path(..., description="Disease ID"),
-    term_id: str = Path(..., description="Term ID")
+    term_id: str = Path(..., description="Term ID"),
+    search_service: SearchService = Depends()
 ):
     """Delete a search term for a disease"""
     try:
-        config = load_search_config(disease_id)
-        
-        term_index = None
-        for i, term in enumerate(config.search_terms):
-            if term.id == term_id:
-                term_index = i
-                break
-        
-        if term_index is None:
-            raise HTTPException(status_code=404, detail=f"Term with ID {term_id} not found")
-        
-        removed_term = config.search_terms.pop(term_index)
-        
-        config.last_updated = datetime.now()
-        
-        save_search_config(config)
-        
-        return {"message": f"Term '{removed_term.term}' deleted successfully"}
-    except HTTPException:
-        raise
+        result = search_service.delete_search_term(disease_id, term_id)
+        return {"message": f"Term '{result}' deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting search term: {str(e)}")
+
+@router.get("/generate/{disease_id}")
+async def generate_search_terms(
+    disease_id: str = Path(..., description="Disease ID"),
+    provider: str = "ollama",
+    model_name: str = "mistral:latest",
+    base_url: str = "http://localhost:11434",
+    disease_service: DiseaseService = Depends(),
+    search_service: SearchService = Depends()
+):
+    """Generate search terms for a disease using LLM"""
+    try:
+        disease = disease_service.get_disease_by_id(disease_id)
+        if not disease:
+            raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
+        
+        try:
+            provider_enum = LLMProvider(provider)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
+        
+        search_service = SearchService(
+            data_loader=disease_service._data_loader,
+            provider=provider_enum,
+            model_name=model_name,
+            base_url=base_url
+        )
+        
+        generated_terms, token_usage = await search_service.generate_search_terms(disease)
+        
+        return {
+            "generated_terms": generated_terms,
+            "token_usage": token_usage.dict()
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating search terms: {str(e)}")
+
+@router.get("/all")
+async def get_all_search_configs(search_service: SearchService = Depends()):
+    """Get all search configurations"""
+    try:
+        configs = search_service.get_all_search_configs()
+        return configs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting all search configs: {str(e)}")
+
+@router.post("/batch-update")
+async def batch_update_search_configs(
+    updates: List[Dict[str, Any]],
+    search_service: SearchService = Depends()
+):
+    """Batch update search configurations"""
+    try:
+        results = []
+        for update in updates:
+            disease_id = update.pop("disease_id", None)
+            if not disease_id:
+                continue
+                
+            try:
+                updated_config = search_service.update_search_config(disease_id, update)
+                results.append({
+                    "disease_id": disease_id,
+                    "success": True,
+                    "config": updated_config
+                })
+            except Exception as e:
+                results.append({
+                    "disease_id": disease_id,
+                    "success": False,
+                    "error": str(e)
+                })
+                
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error batch updating search configs: {str(e)}")
