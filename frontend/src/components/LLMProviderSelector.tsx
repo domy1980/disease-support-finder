@@ -156,7 +156,9 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({ onProviderCha
               ? 'Ollamaのデフォルト: http://localhost:11434' 
               : selectedProvider === 'mlx'
                 ? 'MLXのデフォルト: http://localhost:8080'
-                : 'LM Studioのデフォルト: http://localhost:1234/v1'
+                : selectedProvider === 'llamacpp'
+                  ? 'llama.cppのデフォルト: http://localhost:8080 (サーバーモード) または空欄 (CLIモード)'
+                  : 'LM Studioのデフォルト: http://localhost:1234/v1'
             }
           </p>
         </div>
