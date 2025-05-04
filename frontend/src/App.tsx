@@ -7,13 +7,14 @@ import { DiseaseList } from './components/DiseaseList';
 import { StatsDisplay } from './components/StatsDisplay';
 import { WebsiteStatusTracker } from './components/WebsiteStatusTracker';
 import { ManualEntryForm } from './components/ManualEntryForm';
-import { LLMSearchControls } from './components/LLMSearchControls';
 import { LLMInfoPanel } from './components/LLMInfoPanel';
 import { EnhancedLLMSearchControls } from './components/LLMSearchControls_enhanced';
+import SearchTermEditor from './components/SearchTermEditor';
+import HumanVerificationPanel from './components/HumanVerificationPanel';
 import { DiseaseWithOrganizations, SearchResponse, OrganizationCollection } from './types';
 import { searchDiseases, fetchDiseaseWithOrganizations, fetchOrganizationCollection } from './services/api';
 
-type View = 'search' | 'list' | 'stats' | 'websites' | 'llm' | 'detail';
+type View = 'search' | 'list' | 'stats' | 'websites' | 'llm' | 'detail' | 'search-terms' | 'verification';
 
 function App() {
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
@@ -212,6 +213,22 @@ function App() {
       );
     }
     
+    if (currentView === 'search-terms' && selectedDisease) {
+      return <SearchTermEditor diseaseId={selectedDisease.disease.disease_id} />;
+    }
+    
+    if (currentView === 'search-terms') {
+      return <SearchTermEditor />;
+    }
+    
+    if (currentView === 'verification' && selectedDisease) {
+      return <HumanVerificationPanel diseaseId={selectedDisease.disease.disease_id} />;
+    }
+    
+    if (currentView === 'verification') {
+      return <HumanVerificationPanel />;
+    }
+    
     return null;
   };
 
@@ -267,6 +284,22 @@ function App() {
               }`}
             >
               LLM検索
+            </button>
+            <button
+              onClick={() => setCurrentView('search-terms')}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                currentView === 'search-terms' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              検索語編集
+            </button>
+            <button
+              onClick={() => setCurrentView('verification')}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                currentView === 'verification' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              人間検証
             </button>
           </nav>
         </div>
