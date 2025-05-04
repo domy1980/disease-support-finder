@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, Typography, Paper, Grid, IconButton, Chip, FormControlLabel, Switch, CircularProgress, Alert } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, IconButton, Chip, FormControlLabel, Switch, CircularProgress, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -236,46 +236,48 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
           検索設定
         </Typography>
         
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={config?.use_approximate_matching || false}
-                  onChange={() => handleUpdateConfig('use_approximate_matching', !config?.use_approximate_matching)}
-                  disabled={loading}
-                />
-              }
-              label="近似マッチングを使用"
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={config?.two_step_validation || false}
-                  onChange={() => handleUpdateConfig('two_step_validation', !config?.two_step_validation)}
-                  disabled={loading}
-                />
-              }
-              label="二段階検証を使用"
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={config?.require_human_verification || false}
-                  onChange={() => handleUpdateConfig('require_human_verification', !config?.require_human_verification)}
-                  disabled={loading}
-                />
-              }
-              label="人間による検証を必須にする"
-            />
-          </Grid>
-        </Grid>
+        <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ width: { xs: '100%', sm: '45%', md: '30%' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={config?.use_approximate_matching || false}
+                    onChange={() => handleUpdateConfig('use_approximate_matching', !config?.use_approximate_matching)}
+                    disabled={loading}
+                  />
+                }
+                label="近似マッチングを使用"
+              />
+            </Box>
+            
+            <Box sx={{ width: { xs: '100%', sm: '45%', md: '30%' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={config?.two_step_validation || false}
+                    onChange={() => handleUpdateConfig('two_step_validation', !config?.two_step_validation)}
+                    disabled={loading}
+                  />
+                }
+                label="二段階検証を使用"
+              />
+            </Box>
+            
+            <Box sx={{ width: { xs: '100%', sm: '45%', md: '30%' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={config?.require_human_verification || false}
+                    onChange={() => handleUpdateConfig('require_human_verification', !config?.require_human_verification)}
+                    disabled={loading}
+                  />
+                }
+                label="人間による検証を必須にする"
+              />
+            </Box>
+          </Box>
+        </Box>
       </Paper>
       
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -283,8 +285,8 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
           検索語の追加
         </Typography>
         
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={4}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ width: { xs: '100%', sm: '45%', md: '30%' } }}>
             <TextField
               fullWidth
               label="検索語"
@@ -292,9 +294,9 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
               onChange={(e) => setNewTerm(e.target.value)}
               disabled={loading}
             />
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Box sx={{ width: { xs: '100%', sm: '20%', md: '15%' } }}>
             <TextField
               fullWidth
               select
@@ -309,9 +311,9 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
               <option value="ja">日本語</option>
               <option value="en">英語</option>
             </TextField>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: { xs: '100%', sm: '30%', md: '25%' } }}>
             <TextField
               fullWidth
               select
@@ -328,9 +330,9 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
               <option value="support">支援団体</option>
               <option value="general">一般</option>
             </TextField>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ width: { xs: '100%', sm: '30%', md: '20%' } }}>
             <Button
               fullWidth
               variant="contained"
@@ -340,8 +342,8 @@ const SearchTermEditor: React.FC<SearchTermEditorProps> = ({ diseaseId: propsDis
             >
               追加
             </Button>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Paper>
       
       <Paper sx={{ p: 2 }}>
