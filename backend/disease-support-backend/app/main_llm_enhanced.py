@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api_enhanced import router as enhanced_router
 from app.api_llm_enhanced import router as llm_router
+from app.api_japanese import router as japanese_router
 import os
 
 app = FastAPI(title="Disease Support Finder API with LLM Enhancement")
@@ -16,6 +17,7 @@ app.add_middleware(
 
 app.include_router(enhanced_router, prefix="/api/v2")
 app.include_router(llm_router, prefix="/api/llm")
+app.include_router(japanese_router, prefix="/api/japanese")
 
 os.makedirs("app/data", exist_ok=True)
 os.makedirs("app/data/content_cache", exist_ok=True)

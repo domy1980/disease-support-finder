@@ -21,8 +21,8 @@
 |------------|------|-----------|----------|
 | Ollama | 簡単なセットアップ、多様なモデル | Mistral, Llama 3 | 16GB+ |
 | MLX | Apple Silicon最適化、高速 | - | 32GB+ |
-| LM Studio | GUIインターフェース、使いやすさ | Qwen32B, Phi-4 | 32GB+ |
-| llama.cpp | Metal GPU加速、高性能 | Phi-4, Qwen32B | 64GB+ |
+| LM Studio | GUIインターフェース、使いやすさ | Qwen30B-A3B, Qwen32B | 32GB+ |
+| llama.cpp | Metal GPU加速、高性能 | Qwen30B-A3B, Qwen32B | 64GB+ |
 | Unsloth | Llama4モデル専用 | Llama-4-Scout-17B | 32GB+ |
 
 ## Ollamaの設定と運用
@@ -63,7 +63,7 @@ ollama serve
 1. バックエンドサーバーを起動
 2. フロントエンドを起動
 3. LLMプロバイダー設定パネルで「Ollama」を選択
-4. モデルとして「mistral:latest」または「llama3:70b-q4_0」を選択
+4. モデルとして「mistral:latest」または「llama3:70b」を選択
 5. API URLとして「http://localhost:11434」を設定
 
 ## MLXの設定と運用

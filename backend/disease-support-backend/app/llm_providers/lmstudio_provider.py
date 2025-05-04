@@ -40,9 +40,8 @@ class LMStudioProvider(LLMProviderInterface):
     async def get_available_models(self) -> List[Dict[str, str]]:
         """Get available models from LMStudio"""
         recommended_models = [
-            {"name": "Qwen30B-A3B", "description": "Qwen 30B A3B - 高精度医療特化モデル（M4 Max 128GB推奨）"},
-            {"name": "Qwen32B", "description": "Qwen 32B - 大規模言語理解に優れたモデル（M4 Max 128GB推奨）"},
-            {"name": "Phi-4-reasoning-plus-8bit", "description": "Phi-4 - 推論能力に優れたMicrosoftモデル（M4 Max 64GB以上推奨）"}
+            {"name": "Qwen30B-A3B", "description": "Qwen 30B A3B - 高精度医療特化モデル・日本語対応（M4 Max 128GB推奨）"},
+            {"name": "Qwen32B", "description": "Qwen 32B - 大規模言語理解に優れたモデル・日本語対応（M4 Max 128GB推奨）"}
         ]
         
         async with aiohttp.ClientSession() as session:
