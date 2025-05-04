@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, Depends
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from app.models import DiseaseInfo
@@ -6,19 +6,22 @@ from app.models_enhanced import (
     DiseaseSearchStats, OrganizationCollection, 
     SearchStatsResponse, OrganizationCollectionResponse
 )
-from app.data_loader import DataLoader
-from app.llm_stats_manager_enhanced import EnhancedLLMStatsManager
+from app.models_llm_enhanced import (
+    LLMSearchStats, LLMOrganizationCollection, 
+    TokenUsage, SearchTerm, LLMValidationStatus
+)
 from app.llm_providers import LLMProvider, LLMProviderInterface
+from app.services.disease_service import DiseaseService
+from app.services.search_service import SearchService
+from app.services.stats_service import StatsService
+from app.services.verification_service import VerificationService
+from app.services.llm_service import LLMService
 import os
 import logging
 import json
 import aiohttp
 
 router = APIRouter()
-
-excel_path = os.path.join(os.path.dirname(__file__), "data", "nando.xlsx")
-data_loader = DataLoader(excel_path)
-stats_manager = EnhancedLLMStatsManager()
 
 daily_search_running = False
 
@@ -28,11 +31,14 @@ async def run_llm_search_for_disease(
     background_tasks: BackgroundTasks, 
     provider: str = "ollama",
     model_name: str = "mistral:latest",
-    base_url: str = "http://localhost:11434"
+    base_url: str = "http://localhost:11434",
+    disease_service: DiseaseService = Depends(),
+    search_service: SearchService = Depends(),
+    stats_service: StatsService = Depends()
 ):
     """Run LLM-enhanced search for a disease and update stats"""
     try:
-        disease = data_loader.get_disease_by_id(disease_id)
+        disease = disease_service.get_disease_by_id(disease_id)
         if not disease:
             raise HTTPException(status_code=404, detail=f"Disease with ID {disease_id} not found")
         
@@ -41,13 +47,21 @@ async def run_llm_search_for_disease(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
         
-        llm_stats_manager = EnhancedLLMStatsManager(
+        search_service = SearchService(
+            data_loader=disease_service._data_loader,
             provider=provider_enum,
             model_name=model_name,
             base_url=base_url
         )
         
-        background_tasks.add_task(llm_stats_manager.search_and_update, disease)
+        stats_service = StatsService(
+            data_loader=disease_service._data_loader,
+            provider=provider_enum,
+            model_name=model_name,
+            base_url=base_url
+        )
+        
+        background_tasks.add_task(stats_service.search_and_update_stats, disease_id)
         
         return {
             "message": f"LLM-enhanced search for {disease.name_ja} started in background",
@@ -65,7 +79,9 @@ async def run_llm_search_for_all_diseases(
     provider: str = "ollama",
     model_name: str = "mistral:latest",
     base_url: str = "http://localhost:11434",
-    max_diseases: int = 0
+    max_diseases: int = 0,
+    disease_service: DiseaseService = Depends(),
+    stats_service: StatsService = Depends()
 ):
     """Run LLM-enhanced search for all diseases and update stats"""
     global daily_search_running
@@ -81,21 +97,17 @@ async def run_llm_search_for_all_diseases(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
         
-        diseases = data_loader.get_all_diseases()
-        
-        if max_diseases > 0 and max_diseases < len(diseases):
-            diseases = diseases[:max_diseases]
-        
-        llm_stats_manager = EnhancedLLMStatsManager(
+        stats_service = StatsService(
+            data_loader=disease_service._data_loader,
             provider=provider_enum,
             model_name=model_name,
             base_url=base_url
         )
         
-        background_tasks.add_task(run_daily_llm_search, diseases, llm_stats_manager)
+        background_tasks.add_task(run_daily_llm_search, max_diseases, stats_service)
         
         return {
-            "message": f"LLM-enhanced search for {len(diseases)} diseases started in background",
+            "message": f"LLM-enhanced search for all diseases started in background (max: {max_diseases if max_diseases > 0 else 'unlimited'})",
             "provider": provider,
             "model": model_name
         }
@@ -105,56 +117,29 @@ async def run_llm_search_for_all_diseases(
         daily_search_running = False
         raise HTTPException(status_code=500, detail=f"Error starting LLM search for all diseases: {str(e)}")
 
-async def run_daily_llm_search(diseases: List[DiseaseInfo], llm_stats_manager: EnhancedLLMStatsManager):
+async def run_daily_llm_search(max_diseases: int, stats_service: StatsService):
     """Run daily LLM-enhanced search for all diseases"""
     global daily_search_running
     
     try:
-        await llm_stats_manager.daily_search_task(diseases)
+        await stats_service.search_all_diseases(max_diseases)
     except Exception as e:
         logging.error(f"Error in daily LLM search: {str(e)}")
     finally:
         daily_search_running = False
 
 @router.get("/search/status")
-async def get_llm_search_status():
+async def get_llm_search_status(stats_service: StatsService = Depends()):
     """Get status of daily LLM search"""
-    return {
-        "daily_search_running": daily_search_running,
-        "stats_count": len(stats_manager.get_all_search_stats()),
-        "collections_count": len(stats_manager.get_all_org_collections())
-    }
+    status = stats_service.get_search_status()
+    status["daily_search_running"] = daily_search_running
+    return status
 
 @router.get("/search/progress")
-async def get_llm_search_progress():
+async def get_llm_search_progress(stats_service: StatsService = Depends()):
     """Get progress of daily LLM search"""
     try:
-        all_diseases = data_loader.get_all_diseases()
-        filtered_diseases = [d for d in all_diseases if stats_manager.should_search_disease(d)]
-        
-        total_diseases = len(filtered_diseases)
-        searched_diseases = sum(1 for d in filtered_diseases if stats_manager.get_search_stats_by_id(d.disease_id))
-        
-        progress = (searched_diseases / total_diseases) * 100 if total_diseases > 0 else 0
-        remaining = total_diseases - searched_diseases
-        
-        avg_time_per_disease = 10  # seconds
-        estimated_remaining_time = remaining * avg_time_per_disease
-        
-        hours, remainder = divmod(estimated_remaining_time, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        
-        return {
-            "total_diseases": total_diseases,
-            "searched_diseases": searched_diseases,
-            "progress_percentage": progress,
-            "remaining_diseases": remaining,
-            "estimated_remaining_time": {
-                "hours": int(hours),
-                "minutes": int(minutes),
-                "seconds": int(seconds)
-            }
-        }
+        return stats_service.get_search_progress()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting LLM search progress: {str(e)}")
 
@@ -191,7 +176,8 @@ async def get_available_providers():
 @router.get("/models")
 async def get_available_models(
     provider: str = Query(LLMProvider.OLLAMA.value, description="LLM provider"),
-    base_url: str = Query("http://localhost:11434", description="Provider API base URL")
+    base_url: str = Query("http://localhost:11434", description="Provider API base URL"),
+    llm_service: LLMService = Depends()
 ):
     """Get available models for a provider"""
     try:
@@ -199,6 +185,11 @@ async def get_available_models(
             provider_enum = LLMProvider(provider)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}. Must be one of: {', '.join([p.value for p in LLMProvider])}")
+        
+        llm_service = LLMService(
+            provider=provider_enum,
+            base_url=base_url
+        )
         
         default_models = {
             LLMProvider.OLLAMA: [
@@ -228,8 +219,7 @@ async def get_available_models(
         }
         
         try:
-            llm_provider = LLMProviderInterface.get_provider(provider_enum, base_url, "")
-            models = await llm_provider.get_available_models()
+            models = await llm_service.get_models()
             
             if not models:
                 models = default_models[provider_enum]
@@ -252,3 +242,19 @@ async def get_available_models(
             "default": "mistral:latest",
             "error": str(e)
         }
+
+@router.get("/token-usage")
+async def get_token_usage(stats_service: StatsService = Depends()):
+    """Get token usage summary"""
+    try:
+        return stats_service.get_token_usage_summary()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting token usage: {str(e)}")
+
+@router.get("/validation/stats")
+async def get_validation_stats(verification_service: VerificationService = Depends()):
+    """Get validation statistics"""
+    try:
+        return verification_service.get_validation_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting validation stats: {str(e)}")
